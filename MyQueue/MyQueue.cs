@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace MyQueues
+namespace Queue
 {
     public class MyQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>
     {
@@ -31,7 +31,6 @@ namespace MyQueues
             _array[_size] = item;
             _size++;
         }
-
         public T Dequeue()
         {
             if (_size != 0)
@@ -47,7 +46,6 @@ namespace MyQueues
 
             throw new InvalidOperationException("Queue is empty.");
         }
-
         public T Peek()
         {
             if (_size != 0)
@@ -59,6 +57,11 @@ namespace MyQueues
         }
         public bool Contains(T item)
         {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
             if (_size == 0)
             {
                 return false;
@@ -71,7 +74,6 @@ namespace MyQueues
             Array.Clear(_array, 0, _size);
             _size = 0;
         }
-
         public void CopyTo(T[] array, int arrayIndex)
         {
             Array.Copy(_array, 0, array, arrayIndex, _size);
@@ -79,14 +81,12 @@ namespace MyQueues
         public IEnumerator<T> GetEnumerator()
         {
 
-            return new MyQueueEnumerator<T>(_array);
+            return new QueueEnumerator<T>(_array, _size);
         }
-
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
-
         private void Grow(int capacity)
         {
             const int GrowFactor = 2;

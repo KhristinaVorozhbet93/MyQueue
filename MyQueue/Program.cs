@@ -1,4 +1,4 @@
-﻿namespace MyQueues
+﻿namespace Queue
 {
     internal class Program
     {

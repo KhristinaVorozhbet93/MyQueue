@@ -70,7 +70,6 @@ namespace MyQueues
         {
             Array.Clear(_array, 0, _size);
             _size = 0;
-            _array = Array.Empty<T>();
         }
 
         public void CopyTo(T[] array, int arrayIndex)

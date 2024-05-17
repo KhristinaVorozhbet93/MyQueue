@@ -1,17 +1,14 @@
-﻿namespace Queue
+﻿namespace Queues
 {
     internal class Program
     {
         static void Main(string[] args)
-        {
+        {       
             MyQueue<string> st = new MyQueue<string>();
             st.Enqueue("новый элемент");
-            st.Enqueue("второй элемент");
-            st.Dequeue();
+            st.Enqueue("второй элемент");      
             st.Enqueue("третий элемент");
-            st.Enqueue("четвертый элемент");
-            st.Enqueue("пятый элемент");
-            st.Enqueue("шестой элемент");
+            st.Dequeue();
 
             foreach (var item in st)
             {

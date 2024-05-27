@@ -7,56 +7,80 @@ namespace Queues
         private Node<T>? _head;
         private Node<T>? _tail;
         private int _count;
+        private object _locker = new();
 
         public int Count => _count;
+
         public void Enqueue(T item)
         {
-            var node = new Node<T>(item);
+            var newNode = new Node<T>(item);
 
-            if (_head is null)
+            while (true)
             {
-                _head = node;
+                var currentTail = _tail;
+
+                if (currentTail == null)
+                {
+                    if (Interlocked.CompareExchange(ref _tail, newNode, null) == null)
+                    {
+                        Interlocked.CompareExchange(ref _head, newNode, null);
+                        Interlocked.Increment(ref _count);
+                        return;
+                    }
+                }
+                else
+                {
+                    newNode.Next = currentTail.Next;
+
+                    if (Interlocked.CompareExchange(ref _tail, newNode, currentTail) == currentTail)
+                    {
+                        Interlocked.Increment(ref _count);
+                        return;
+                    }
+                }
             }
-            else
-            {
-                _tail!.Next = node; 
-            }
-            _tail = node;
-            _count++;
         }
+
         public T Dequeue()
         {
-            if (_head is not null)
+            while (true)
             {
-                var item = _head.Next!.Data;
-                _head = _head.Next;
+                var currentHead = _head;
 
-                if (_head is null)
+                if (currentHead == null)
                 {
-                    _tail = null;
-                    _count = 0;
+                    throw new InvalidOperationException("Queue is empty.");
                 }
-                _count--;
-                return item;
-            }
 
-            throw new InvalidOperationException("Queue is empty.");
-        }
-        public T Peek()
-        {
-            if (_head is not null)
-            {
-                var item = _head.Next!.Data;
-                return item;
+                var nextNode = currentHead.Next;
+
+                if (Interlocked.CompareExchange(ref _head, nextNode, currentHead) == currentHead)
+                {
+                    if (nextNode != null)
+                    {
+                        Interlocked.Decrement(ref _count);
+                        return nextNode.Data;
+                    }
+                    else
+                    {
+                        Interlocked.Exchange(ref _tail, null);
+                        Interlocked.Decrement(ref _count);
+                        return currentHead.Data;
+                    }
+                }
             }
-            throw new InvalidOperationException("Queue is empty.");
         }
+
         public void Clear()
         {
-            _head = null;
-            _tail = null;
-            _count = 0;
-        }      
+            lock (_locker)
+            {
+                _head = null;
+                _tail = null;
+                _count = 0;
+            }
+        }
+
         public bool Contains(T item)
         {
             if (item == null)
@@ -69,15 +93,19 @@ namespace Queues
                 return false;
             }
 
-            Node<T>? current = _head;
-            while (current != null && current.Data != null)
+            lock (_locker)
             {
-                if (current.Data.Equals(item)) return true;
-                current = current.Next;
+                Node<T>? current = _head;
+                while (current != null && current.Data != null)
+                {
+                    if (current.Data.Equals(item)) return true;
+                    current = current.Next;
+                }
             }
             return false;
 
         }
+
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -85,22 +113,43 @@ namespace Queues
             if (arrayIndex < 0 || arrayIndex >= array.Length)
                 throw new ArgumentOutOfRangeException("Index out of range.");
 
-            Node<T>? current = _head;
-            while (current != null)
+            lock (_locker)
             {
-                array[arrayIndex++] = current.Data;
-                current = current.Next;
+                Node<T>? current = _head;
+                while (current != null)
+                {
+
+                    array[arrayIndex++] = current.Data;
+                    current = current.Next;
+                }
             }
+        }
+
+        public T Peek()
+        {
+            if (_head is not null)
+            {
+                lock (_locker)
+                {
+                    var item = _head.Next!.Data;
+                    return item;
+                }
+            }
+
+            throw new InvalidOperationException("Queue is empty.");
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            Node<T>? current = _head;
-
-            while (current != null)
+            lock (_locker)
             {
-                yield return current.Data;
-                current = current.Next;
+                Node<T>? current = _head;
+
+                while (current != null)
+                {
+                    yield return current.Data;
+                    current = current.Next;
+                }
             }
         }
         IEnumerator IEnumerable.GetEnumerator()

@@ -3,30 +3,22 @@
     internal class Program
     {
         static void Main(string[] args)
-        {       
+        {                 
             MyQueue<string> st = new MyQueue<string>();
-            st.Enqueue("новый элемент");
-            st.Enqueue("второй элемент");      
-            st.Enqueue("третий элемент");
-            st.Dequeue();
 
-            foreach (var item in st)
+            var task = Task.Run(() =>
             {
-                Console.WriteLine(item);
+                for (int i = 0; i < 10000000; i++)
+                {
+                    st.Enqueue(i.ToString());
+                }
+            });
+            for (int i = 0; i < 10000000; i++)
+            {
+                st.Enqueue(i.ToString());
             }
-
-            Console.WriteLine(st.Contains("элемент"));
-
-            var firstElement = st.Peek();
-            Console.WriteLine(firstElement);
-
+            task.Wait();
             Console.WriteLine(st.Count);
-
-            st.Clear();
-            foreach (var item in st)
-            {
-                Console.WriteLine(item);
-            }
         }
     }
 }
